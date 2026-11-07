@@ -60,7 +60,7 @@ class Retriever:
         stored = _read_json(self._fingerprint_file)
         if (
             stored is not None
-            and self._fingerprint_matches(stored, movies)
+            and stored == self._fingerprint(len(movies))
             and self._all_files_exist()
         ):
             print(
@@ -97,7 +97,7 @@ class Retriever:
             self._entity_index, self._entity_meta = None, []
             print("警告：别名表与 movies 均无实体名，未构建实体索引。")
 
-        _write_json(self._fingerprint_file, self._fingerprint(movies))
+        _write_json(self._fingerprint_file, self._fingerprint(len(movies)))
         print(f"Embedding API 用量：{self._embedder.usage}")
 
     def search_synopsis(self, query: str, k: int = 3) -> list[dict[str, Any]]:
@@ -232,7 +232,7 @@ class Retriever:
         stored = _read_json(self._fingerprint_file)
         if (
             stored is not None
-            and self._fingerprint_matches_without_movies(stored)
+            and self._fingerprint_matches_without_count(stored)
             and self._all_files_exist()
         ):
             self._load_indexes()
@@ -298,31 +298,26 @@ class Retriever:
             )
         )
 
-    def _fingerprint(self, movies: list[dict[str, Any]]) -> dict[str, Any]:
+    def _fingerprint(self, movies_count: int | None) -> dict[str, Any]:
         """重建判据：embedding 模型/维度 + 分块参数 + movies 数量与数据文件 mtime。"""
         return {
             "embedding_model": self.embedding_cfg.model,
             "dimensions": int(self.embedding_cfg.dimensions),
             "chunk_chars": self.cfg.retriever.synopsis_chunk_chars,
             "chunk_overlap": self.cfg.retriever.synopsis_chunk_overlap,
-            "movies_count": len(movies),
+            "movies_count": movies_count,
             "movies_mtime": _movies_mtime(self.cfg.movies_file),
         }
 
-    def _fingerprint_matches(
-        self, stored: dict[str, Any], movies: list[dict[str, Any]]
-    ) -> bool:
-        return stored == self._fingerprint(movies)
-
-    def _fingerprint_matches_without_movies(self, stored: dict[str, Any]) -> bool:
+    def _fingerprint_matches_without_count(self, stored: dict[str, Any]) -> bool:
         """__init__ 阶段手里没有 movies 列表，只比对模型/维度/分块参数与 mtime。"""
-        expected = self._fingerprint([])
+        expected = self._fingerprint(None)
         for key in ("embedding_model", "dimensions", "chunk_chars", "chunk_overlap"):
             if stored.get(key) != expected[key]:
                 return False
-        movies_mtime = _movies_mtime(self.cfg.movies_file)
+        mtime = expected["movies_mtime"]
         # movies 文件缺失时无法核对 mtime，视作未变化（仅按模型/维度/分块参数判断）
-        return movies_mtime is None or stored.get("movies_mtime") == movies_mtime
+        return mtime is None or stored.get("movies_mtime") == mtime
 
     def _summary(self) -> str:
         chunks = self._synopsis_index.ntotal if self._synopsis_index is not None else 0

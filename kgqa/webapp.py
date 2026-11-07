@@ -1,14 +1,14 @@
 """周星驰电影知识图谱问答系统的 Gradio 工作台（v2 界面）。
 
 先决条件：
-    1. kg/ 下已有三元组与别名表（python main.py build-kg；成品随仓库分发）；
+    1. data/kg/ 下已有三元组与别名表（python main.py build-kg；成品随仓库分发）；
     2. data/index/ 下已有 FAISS 索引（python main.py index；缺失时 Retriever 会
        尝试自动重建，需要 SILICONFLOW_API_KEY）；
     3. 可选：根目录 .env 配置 SILRA_API_KEY（无 key 自动进入降级模式）。
 
 用法：
-    python webapp.py
-    python webapp.py --config configs/kg_qa.yaml --port 7860 --host 127.0.0.1
+    python -m kgqa.webapp
+    python -m kgqa.webapp --config configs/kg_qa.yaml --port 7860 --host 127.0.0.1
 
 界面（mockup 三轮定稿方案）：
     头部   左标题 + 右状态签行（● 运行中 / ◐ 仅直答 / 模型名 / 73 部 · N 三元组
@@ -29,7 +29,7 @@
     - 「仅直答」= answer(llm=None)，等同无 key 降级，状态签切琥珀色；
     - 分级加载：图谱 / 别名 / 向量检索 / LLM 任一失败不白屏，能在缺角情况下
       继续运行（retriever/llm 缺失只降级，图谱缺失才整体报错）；
-    - 问答编排复用 kg_qa.answer（契约 §6），webapp 只做界面与证据展示；
+    - 问答编排复用 kgqa.qa.answering.answer（契约 §6），webapp 只做界面与证据展示；
       图谱可视化数据由 kg_viz.py 序列化（邻域提取 / JSON 组装）。
 """
 
@@ -55,7 +55,6 @@ from kgqa.llm_client import create_client, has_api_key, load_env_file
 from kgqa.qa.answering import answer
 from kgqa.qa.retriever import Retriever
 
-# answer() 返回的 mode → 界面显示名（契约 §6）
 # 回答模式 → (是否使用 LLM, 强制路线)；教学对照：同一问题四种证据组装方式
 MODE_CONFIG: dict[str, tuple[bool, str | None]] = {
     "自动": (True, None),
@@ -64,6 +63,7 @@ MODE_CONFIG: dict[str, tuple[bool, str | None]] = {
     "仅检索": (False, "evidence"),
 }
 
+# answer() 返回的 mode → 界面显示名（契约 §6）
 MODE_LABELS: dict[str, str] = {
     "direct": "模板直答",
     "rag": "RAG 生成",
@@ -768,7 +768,7 @@ def _load_state(cfg: Config) -> None:
 
     - 图谱加载失败 → _state["error"]（页面状态签 ❌，问答不可用，服务仍启动）；
     - 别名 / 检索 / LLM 失败 → 记入 load_errors，对应能力降级但界面照常；
-    - 无 key 时 llm=None，kg_qa 走规则降级（契约 §6）。
+    - 无 key 时 llm=None，answering 走规则降级（契约 §6）。
     """
     print(
         "正在加载知识图谱、别名表与 FAISS 索引（Retriever 将连接 Embedding API，请稍候）…"
@@ -894,7 +894,7 @@ def _load_details_markdown() -> str:
 def _usage_line(result: dict[str, Any]) -> str:
     """「本次用量」：最近一问的 API 调用次数与 token 用量。
 
-    kg_qa 只保证 api_usage 含 prompt_tokens / completion_tokens（契约 §3/§6）：
+    answer() 只保证 api_usage 含 prompt_tokens / completion_tokens（契约 §3/§6）：
     - api_usage 为 None → 本地模板 / 规则 / 检索，0 次调用；
     - 理解 dict 带 degraded_reason → 生成未发生，usage 来自理解调用（N=1）；
     - 否则为 RAG 生成调用（N=2：理解 1 + 生成 1）。
@@ -917,12 +917,13 @@ def _usage_line(result: dict[str, Any]) -> str:
 
 def _pill(entity: str, entity_type: str, neighborhoods: dict[str, Any]) -> str:
     """实体胶囊：按类型着色；邻域数据存在的实体可点击打开聚焦弹窗。"""
-    cls = "kg-ent t-" + (entity_type or "字面值")
-    if entity in neighborhoods:
-        cls += " kg-link"
-    attrs = ""
-    if entity in neighborhoods:
-        attrs = f' data-ent="{html.escape(entity, quote=True)}" title="查看 {html.escape(entity)} 的邻域"'
+    linked = entity in neighborhoods
+    cls = "kg-ent t-" + (entity_type or "字面值") + (" kg-link" if linked else "")
+    attrs = (
+        f' data-ent="{html.escape(entity, quote=True)}" title="查看 {html.escape(entity)} 的邻域"'
+        if linked
+        else ""
+    )
     return f'<span class="{cls}"{attrs}>{html.escape(entity)}</span>'
 
 
@@ -962,15 +963,12 @@ def _triple_rows_html(
 def _passages_html(passages: list[dict[str, Any]], offset: int) -> str:
     """检索片段卡片：证据编号 [n] + score 徽章（大字 + 迷你强度条）+ 片段正文。
 
-    编号沿用 kg_qa._serialize_evidence 的口径：简介片段接在三元组之后（[T+1..]），
+    编号沿用 answering._serialize_evidence 的口径：简介片段接在三元组之后（[T+1..]），
     与回答里的 [n] 引用一一对应。
     """
     cards: list[str] = []
     for index, passage in enumerate(passages, offset + 1):
-        try:
-            score = float(passage.get("score") or 0.0)
-        except (TypeError, ValueError):
-            score = 0.0
+        score = float(passage.get("score") or 0.0)
         pct = round(max(0.0, min(1.0, score)) * 100)
         title = html.escape(str(passage.get("title") or ""))
         chunk = html.escape(str(passage.get("chunk") or ""))
@@ -1037,7 +1035,7 @@ def _link_citations(answer_text: str, n_evidence: int) -> str:
 
 
 def _answer_once(question: str, mode: str) -> dict[str, Any]:
-    """单轮问答入口：把界面状态交给 kg_qa.answer（契约 §6）。"""
+    """单轮问答入口：把界面状态交给 answering.answer（契约 §6）。"""
     if _state.get("error"):
         raise RuntimeError(str(_state["error"]))
     use_llm, route = MODE_CONFIG.get(mode, (True, None))
@@ -1183,7 +1181,7 @@ def build_demo() -> gr.Blocks:
     return demo
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         description="周星驰电影知识图谱问答工作台（Gradio Blocks）"
     )
@@ -1197,7 +1195,7 @@ def main() -> None:
         default=None,
         help="监听端口，默认取配置 gradio.port（7860）",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     load_env_file()  # 读根目录 .env（提供 SILRA_API_KEY 时使用）
     try:
@@ -1206,27 +1204,10 @@ def main() -> None:
         print(f"配置加载失败：{exc}")
         raise SystemExit(1) from None
 
-    # 兼容 gradio 段的两种字段命名（server_name/server_port 与 host/port）
-    host = (
-        args.host
-        or getattr(cfg.gradio, "server_name", None)
-        or getattr(cfg.gradio, "host", None)
-        or "127.0.0.1"
-    )
-    port = (
-        args.port
-        or getattr(cfg.gradio, "server_port", None)
-        or getattr(cfg.gradio, "port", None)
-        or 7860
-    )
+    host = args.host or cfg.gradio.host
+    port = args.port or cfg.gradio.port
 
-    try:
-        _load_state(cfg)
-    except Exception as exc:  # _load_state 内部已分级容错，这里兜底保启动
-        _state["error"] = (
-            f"{exc}\n\n请确认已在仓库根目录完成 ingest / build-kg / index 三步。"
-        )
-        print(f"组件加载失败，服务仍将启动并在页面状态签展示中文提示：{exc}")
+    _load_state(cfg)
 
     demo = build_demo()
     print(f"工作台地址：http://{host}:{port}（Ctrl+C 退出）")

@@ -16,9 +16,9 @@
 断点续爬：subjects.json 已存在且非空时跳过采集（--force 重爬）。
 
 独立运行：
-    python collect_list.py                    # 用 configs/kg_qa.yaml 的 douban 配置
-    python collect_list.py --max-pages 2      # 只翻两页，快速验证
-    python collect_list.py --force            # 忽略已有结果重爬
+    python -m kgqa.collect_list               # 用 configs/kg_qa.yaml 的 douban 配置
+    python -m kgqa.collect_list --max-pages 2 # 只翻两页，快速验证
+    python -m kgqa.collect_list --force       # 忽略已有结果重爬
 """
 
 from __future__ import annotations
@@ -155,13 +155,6 @@ def collect(
     print(f"\n清单已写出：{subjects_file}（{len(subject_list)} 条）")
     print(f"原始条目已写出：{raw_file}（{len(all_items)} 条，含被过滤的人物卡等）")
     return subject_list
-
-
-def run(
-    cfg: Config, max_pages: int | None = None, force: bool = False
-) -> list[dict[str, Any]]:
-    """供 main.py ingest --collect-list 调用。"""
-    return collect(cfg, max_pages=max_pages, force=force)
 
 
 def main() -> None:

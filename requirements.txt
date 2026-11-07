@@ -10,7 +10,7 @@ tqdm>=4.66
 openai>=1.40
 python-dotenv>=1.0
 
-# 网页工作台 webapp.py（Gradio Blocks）
+# 网页工作台（kgqa/webapp.py，Gradio Blocks）
 gradio>=4.44
 
 # 开发工具（ruff / mypy 过检用，不影响运行）

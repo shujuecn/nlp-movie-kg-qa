@@ -37,12 +37,12 @@ def load_graph(kg_dir: str | Path) -> nx.MultiDiGraph:
             if row is None:
                 continue
             graph.add_edge(
-                str(row.get("head") or ""),
-                str(row.get("tail") or ""),
-                relation=str(row.get("relation") or ""),
-                source=str(row.get("source") or ""),
-                head_type=str(row.get("head_type") or ""),
-                tail_type=str(row.get("tail_type") or ""),
+                str(row["head"]),
+                str(row["tail"]),
+                relation=str(row.get("relation", "")),
+                source=str(row.get("source", "")),
+                head_type=str(row.get("head_type", "")),
+                tail_type=str(row.get("tail_type", "")),
             )
             added += 1
         total += added

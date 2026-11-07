@@ -1,4 +1,5 @@
-"""评测：读 data/eval/qa_eval.jsonl 逐题调 kg_qa.answer，输出三项指标与分题型摘要。
+"""评测：读 data/eval/qa_eval.jsonl，逐题调 kgqa.qa.answering.answer，
+输出三项指标与分题型摘要。
 
 指标（契约 §8）：
 - 链接命中率：抽出了实体提及（entity_mentions 非空）的题目里，至少成功链接
@@ -6,13 +7,13 @@
 - 答案关键词命中率：gold_keywords 任一出现在答案文本中即算命中（英文不区分大小写）；
 - 生成题引用有效率：mode=rag 的题目里，答案含 [n] 引用且每个 n 都落在证据编号
   范围内的比例（三元组 [1..T] + 简介片段 [T+1..T+P]，
-  编号规则见 kg_qa._serialize_evidence）。
+  编号规则见 kgqa.qa.answering._serialize_evidence）。
 
 无 SILRA key 时生成题按 degraded 评测（引用有效率口径仍只统计 mode=rag）；
 无 SILICONFLOW key 时 retriever=None，生成题没有简介片段证据。
 评测集缺失时中文报错（CLI 捕获后以 SystemExit 退出，不崩栈）。
 
-独立运行：python evaluate.py [-c configs/kg_qa.yaml]
+独立运行：python -m kgqa.evaluate [-c configs/kg_qa.yaml]
 报告写 data/eval_report.json（总分 + 分题型 + 逐题明细）。
 """
 
@@ -25,7 +26,7 @@ from collections import Counter
 from typing import Any
 
 from kgqa.config import Config, load_config
-from kgqa.embed_client import EmbedError, has_embed_key
+from kgqa.embed_client import has_embed_key
 from kgqa.graph import load_graph
 from kgqa.kg_linker import load_aliases
 from kgqa.llm_client import LLMClient, create_client, has_api_key, load_env_file
@@ -104,7 +105,7 @@ def _build_retriever(cfg: Config) -> Retriever | None:
         return None
     try:
         return Retriever(cfg, cfg.embedding)
-    except (EmbedError, RuntimeError, FileNotFoundError) as exc:
+    except (RuntimeError, FileNotFoundError) as exc:
         print(f"警告：Retriever 初始化失败（{exc}），生成题将没有简介片段证据。")
         return None
 

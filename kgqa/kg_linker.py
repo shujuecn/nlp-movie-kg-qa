@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-__all__ = ["LinkResult", "link_entity", "load_aliases"]
+__all__ = ["LinkResult", "link_entity", "load_aliases", "row_names"]
 
 
 @dataclass
@@ -66,7 +66,7 @@ def link_entity(
 
     # 一级：实体名 / 别名精确命中（大小写不敏感，覆盖英文名），按登记顺序取第一个
     for row in aliases:
-        for candidate in _row_names(row):
+        for candidate in row_names(row):
             if candidate.casefold() == mention.casefold():
                 return LinkResult(
                     _entity_of(row, candidate), _type_of(row), 1.0, "exact"
@@ -76,7 +76,7 @@ def link_entity(
     best_len, best_score, best_result = -1, -1.0, None
     for row in aliases:
         entity = str(row.get("entity") or "").strip()
-        for candidate in _row_names(row):
+        for candidate in row_names(row):
             if candidate == mention:  # 精确阶段已处理
                 continue
             if candidate not in mention and mention not in candidate:
@@ -111,7 +111,7 @@ def link_entity(
     return None
 
 
-def _row_names(row: dict[str, Any]) -> list[str]:
+def row_names(row: dict[str, Any]) -> list[str]:
     """一个别名表行的全部候选：实体名 + 别名（同权、去重、去首尾空白）。"""
     names = [str(row.get("entity") or ""), *(str(a) for a in row.get("aliases") or [])]
     return [name.strip() for name in dict.fromkeys(names) if name.strip()]
@@ -128,6 +128,6 @@ def _type_of(row: dict[str, Any]) -> str:
 def _find_row(aliases: list[dict[str, Any]], name: str) -> dict[str, Any] | None:
     """向量兜底命中的 name 回查别名表（实体名或别名），换回规范实体与类型。"""
     for row in aliases:
-        if name in _row_names(row):
+        if name in row_names(row):
             return row
     return None

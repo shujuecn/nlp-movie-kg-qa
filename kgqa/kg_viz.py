@@ -1,6 +1,6 @@
 """图谱可视化辅助（仅供 webapp.py 使用）：邻域提取与 d3 数据序列化。
 
-只依赖 kg_qa.load_graph 产出的 networkx.MultiDiGraph（边属性固定
+只依赖 kgqa.graph.load_graph 产出的 networkx.MultiDiGraph（边属性固定
 relation / source / head_type / tail_type，见接口契约 §6），不 import、
 不改动任何后端模块。所有输出 JSON 面向 gr.HTML 注入，注意体量预算
 （单组件注入 ≤200KB，见 PAYLOAD_LIMIT）。
@@ -75,7 +75,7 @@ def pick_focus(graph: nx.MultiDiGraph, types: dict[str, str]) -> str:
             deg = graph.degree(name)
             if deg > best_deg:
                 best, best_deg = name, deg
-    return best or (next(iter(graph.nodes), "") if graph.number_of_nodes() else "")
+    return best or next(iter(graph.nodes), "")
 
 
 def neighborhood(

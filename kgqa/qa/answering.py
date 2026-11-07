@@ -131,16 +131,9 @@ def answer(
     if route == "evidence":
         # 仅检索模式（用户指定）：组装证据但不生成，零 API 成本
         triples = _subgraph_triples(graph, linked)
-        passages: list[dict[str, Any]] = []
-        if retriever is not None:
-            pool = retriever.search_synopsis(
-                question, k=cfg.retriever.synopsis_top_k + 12
-            )
-            passages = _promote_linked_movie_passages(
-                pool, linked, cfg.retriever.synopsis_top_k
-            )
+        passages = _collect_passages(retriever, question, linked, cfg)
         understanding = {
-            **understanding,
+            **understanding_evidence,
             "degraded_reason": "仅检索模式（用户指定）：只返回证据，不生成答案",
         }
         return {
@@ -183,18 +176,18 @@ def _link_mentions(
     threshold = cfg.retriever.entity_threshold
     top_k = cfg.retriever.entity_top_k
 
-    def fallback(mention: str) -> list[tuple[str, float]]:
-        assert retriever is not None  # 仅在 retriever 可用时被 link_entity 调用
-        return retriever.search_entities(mention, k=top_k)
-
-    fallback_fn: Callable[[str], list[tuple[str, float]]] | None = None
+    # 向量兜底仅在 retriever 可用时提供；link_entity 只在兜底非 None 时才调用它
+    fallback: Callable[[str], list[tuple[str, float]]] | None = None
     if retriever is not None:
-        fallback_fn = fallback
+
+        def fallback(mention: str) -> list[tuple[str, float]]:
+            return retriever.search_entities(mention, k=top_k)
+
     results: list[LinkResult] = []
     seen: set[str] = set()
     for mention in mentions:
         result = link_entity(
-            mention, aliases, vector_fallback=fallback_fn, threshold=threshold
+            mention, aliases, vector_fallback=fallback, threshold=threshold
         )
         if result is None or result.entity in seen:
             continue
@@ -226,6 +219,18 @@ def _effective_aliases(
         if name not in known
     ]
     return [*aliases, *extra]
+
+
+def _edge_row(u: str, v: str, data: dict[str, Any]) -> dict[str, Any]:
+    """networkx 边 → 契约 §2 的三元组行（evaluate 与 webapp 消费的统一形状）。"""
+    return {
+        "head": u,
+        "head_type": str(data.get("head_type") or ""),
+        "relation": str(data.get("relation") or ""),
+        "tail": v,
+        "tail_type": str(data.get("tail_type") or ""),
+        "source": str(data.get("source") or ""),
+    }
 
 
 # ---- fact：图谱谓词查询 + 模板直答 ----
@@ -300,16 +305,7 @@ def _answer_collaboration(
                 other, other_type = u, data.get("head_type")
             if other_type == "电影":
                 movies.add(str(other))
-                edges.append(
-                    {
-                        "head": u,
-                        "head_type": str(data.get("head_type") or ""),
-                        "relation": str(data.get("relation") or ""),
-                        "tail": v,
-                        "tail_type": str(data.get("tail_type") or ""),
-                        "source": str(data.get("source") or ""),
-                    }
-                )
+                edges.append(_edge_row(u, v, data))
         movie_sets.append(movies)
 
     common: set[str] = set()
@@ -352,16 +348,7 @@ def _collect_edges(
             if key in seen:
                 continue
             seen.add(key)
-            rows.append(
-                {
-                    "head": u,
-                    "head_type": str(data.get("head_type") or ""),
-                    "relation": relation,
-                    "tail": v,
-                    "tail_type": str(data.get("tail_type") or ""),
-                    "source": str(data.get("source") or ""),
-                }
-            )
+            rows.append(_edge_row(u, v, data))
     return rows
 
 
@@ -491,14 +478,7 @@ def _answer_rag(
     cfg: Config,
 ) -> dict[str, Any]:
     triples = _subgraph_triples(graph, linked)
-    passages: list[dict[str, Any]] = []
-    if retriever is not None:
-        # 检索池取宽一些（一次 encode 调用，多取不增加 API 成本），
-        # 再把链接电影的自身简介块提到前排，见 _promote_linked_movie_passages
-        pool = retriever.search_synopsis(question, k=cfg.retriever.synopsis_top_k + 12)
-        passages = _promote_linked_movie_passages(
-            pool, linked, cfg.retriever.synopsis_top_k
-        )
+    passages = _collect_passages(retriever, question, linked, cfg)
 
     reasons: list[str] = []
     hints: list[str] = []
@@ -547,6 +527,21 @@ def _answer_rag(
     }
 
 
+def _collect_passages(
+    retriever: Retriever | None,
+    question: str,
+    linked: list[LinkResult],
+    cfg: Config,
+) -> list[dict[str, Any]]:
+    """简介片段证据：检索池取宽（一次 encode 调用，多取不增加 API 成本），
+    再把链接电影的自身简介块提到前排，见 _promote_linked_movie_passages。
+    """
+    if retriever is None:
+        return []
+    pool = retriever.search_synopsis(question, k=cfg.retriever.synopsis_top_k + 12)
+    return _promote_linked_movie_passages(pool, linked, cfg.retriever.synopsis_top_k)
+
+
 def _promote_linked_movie_passages(
     pool: list[dict[str, Any]],
     linked: list[LinkResult],
@@ -580,16 +575,7 @@ def _subgraph_triples(
             if key in seen:
                 continue
             seen.add(key)
-            rows.append(
-                {
-                    "head": u,
-                    "head_type": str(data.get("head_type") or ""),
-                    "relation": str(data.get("relation") or ""),
-                    "tail": v,
-                    "tail_type": str(data.get("tail_type") or ""),
-                    "source": str(data.get("source") or ""),
-                }
-            )
+            rows.append(_edge_row(u, v, data))
             if len(rows) >= limit:
                 return rows
     return rows
@@ -627,9 +613,8 @@ def _degraded_answer(
 
 
 def _api_usage(llm: LLMClient | None) -> dict[str, int] | None:
-    """本次问答的 API 用量（契约 §3 的 llm.last_usage）；没有调用时为 None。"""
-    usage = getattr(llm, "last_usage", None)
-    return dict(usage) if isinstance(usage, dict) else None
+    """本次问答的 API 用量（llm.last_usage 的快照）；没有调用时为 None。"""
+    return dict(llm.last_usage) if llm is not None else None
 
 
 def _evidence(

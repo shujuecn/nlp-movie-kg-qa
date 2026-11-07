@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Any
 
 import numpy as np
 
@@ -109,7 +108,3 @@ class EmbedClient:
 def create_embedder(cfg: EmbeddingConfig) -> EmbedClient:
     """有 key 时构造客户端；无 key 直接中文报错（不做降级判断用）。"""
     return EmbedClient(cfg)
-
-
-def _unused(*_args: Any) -> None:  # pragma: no cover
-    """占位：numpy 在类型标注中出现，保持导入显式。"""

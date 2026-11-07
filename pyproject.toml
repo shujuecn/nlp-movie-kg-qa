@@ -31,8 +31,8 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# webapp.py 的中文 docstring 与界面文案常有超长行，不做 E501 检查。
-"webapp.py" = ["E501"]
+# kgqa/webapp.py 的中文 docstring 与界面文案常有超长行，不做 E501 检查。
+"kgqa/webapp.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"

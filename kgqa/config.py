@@ -10,6 +10,8 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 # 知识图谱实体类型（data/kg/triples.jsonl 的 head_type / tail_type 取值范围）；
 # “字面值”用于属性型关系（上映年份/片长/评分/又名）的 tail
 ENTITY_TYPES: tuple[str, ...] = (
@@ -184,10 +186,6 @@ class Config:
         return self.root / self.output.dir
 
     @property
-    def model_dir(self) -> Path:
-        return self.root / "models"
-
-    @property
     def raw_dir(self) -> Path:
         return self.root / self.douban.raw_dir
 
@@ -289,8 +287,6 @@ def load_config(
 
 def yaml_safe_load(config_path: Path) -> dict[str, Any]:
     """顶层键值表读取，空文件视为空配置。"""
-    import yaml
-
     raw = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
     if not isinstance(raw, dict):
         raise ValueError(f"配置文件 {config_path} 顶层必须是键值表")

@@ -9,7 +9,7 @@
   eval      30 道金标题评测（kgqa.evaluate.run）
   serve     Gradio 工作台（kgqa.webapp.main）
 
-index / eval / serve 依赖的模块在各子命令分支内延迟导入——
+index / ask / eval / serve 依赖的模块在各子命令分支内延迟导入——
 数据管线（ingest / build-kg）不装 faiss / gradio 也能跑。
 """
 
@@ -20,11 +20,11 @@ import json
 import sys
 from typing import Any
 
-from kgqa.config import load_config
+from kgqa.config import Config, load_config
 from kgqa.llm_client import create_client, has_api_key, load_env_file
 
 
-def read_movies(cfg: Any) -> list[dict[str, Any]]:
+def read_movies(cfg: Config) -> list[dict[str, Any]]:
     """读取 ingest 产出的 movies.jsonl（index / ask 用）。"""
     if not cfg.movies_file.exists():
         raise FileNotFoundError(
@@ -42,28 +42,27 @@ def read_movies(cfg: Any) -> list[dict[str, Any]]:
     return movies
 
 
-def cmd_ingest(cfg: Any, args: argparse.Namespace) -> None:
+def cmd_ingest(cfg: Config, args: argparse.Namespace) -> None:
     if args.collect_list:
-        from kgqa.collect_list import run as run_collect_list
+        from kgqa.collect_list import collect
 
-        run_collect_list(cfg, max_pages=args.max_pages, force=args.force)
-    from kgqa.collect_detail import run as run_ingest
+        collect(cfg, max_pages=args.max_pages, force=args.force)
+    from kgqa.collect_detail import fetch_missing, ingest
 
-    run_ingest(
-        cfg,
-        fetch=args.fetch,
-        storage_state=args.storage_state,
-        headless=not args.no_headless,
-    )
+    if args.fetch:
+        fetch_missing(
+            cfg, storage_state=args.storage_state, headless=not args.no_headless
+        )
+    ingest(cfg)
 
 
-def cmd_build_kg(cfg: Any, args: argparse.Namespace) -> None:
+def cmd_build_kg(cfg: Config, args: argparse.Namespace) -> None:
     from kgqa.build_kg import run as run_build_kg
 
     run_build_kg(cfg)
 
 
-def cmd_index(cfg: Any, args: argparse.Namespace) -> None:
+def cmd_index(cfg: Config, args: argparse.Namespace) -> None:
     from kgqa.qa.retriever import Retriever
 
     movies = read_movies(cfg)
@@ -76,7 +75,7 @@ def cmd_index(cfg: Any, args: argparse.Namespace) -> None:
     )
 
 
-def cmd_ask(cfg: Any, args: argparse.Namespace) -> None:
+def cmd_ask(cfg: Config, args: argparse.Namespace) -> None:
     from kgqa.graph import load_graph
     from kgqa.kg_linker import load_aliases
     from kgqa.qa.answering import answer
@@ -110,22 +109,21 @@ def cmd_ask(cfg: Any, args: argparse.Namespace) -> None:
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
-def cmd_eval(cfg: Any, args: argparse.Namespace) -> None:
+def cmd_eval(cfg: Config, args: argparse.Namespace) -> None:
     from kgqa.evaluate import run as run_eval
 
     run_eval(cfg)
 
 
-def cmd_serve(cfg: Any, args: argparse.Namespace) -> None:
+def cmd_serve(cfg: Config, args: argparse.Namespace) -> None:
     from kgqa.webapp import main as webapp_main
 
-    argv = ["webapp", "-c", args.config]
+    argv = ["-c", args.config]
     if args.port is not None:
         argv += ["--port", str(args.port)]
     if args.host is not None:
         argv += ["--host", args.host]
-    sys.argv = argv
-    webapp_main()
+    webapp_main(argv)
 
 
 def main() -> None:

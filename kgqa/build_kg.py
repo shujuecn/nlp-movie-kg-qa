@@ -16,13 +16,14 @@
 语义三元组（饰演/题材）由 extract_llm.py 离线抽取，单独写 data/kg/triples_llm.jsonl，
 与本文件互不影响；问答时两份三元组会合并加载。
 
-独立运行：python build_kg.py [-c configs/kg_qa.yaml]
+独立运行：python -m kgqa.build_kg [-c configs/kg_qa.yaml]
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 from typing import Any
 
 from kgqa.config import Config, load_config
@@ -108,12 +109,9 @@ def build(
         entities.setdefault((triple["head"], triple["head_type"]), [])
 
     # 人物/类型/地区/语言先登记（默认无别名），电影用 aka 行覆盖
-    for (entity, entity_type), aliases in sorted(entities.items()):
-        if entity_type == "电影":
-            continue
-        entities[(entity, entity_type)] = aliases  # 保持键结构，便于阅读
-        if entity == PERSON_CHOW:
-            continue
+    for entity, entity_type in sorted(entities):
+        if entity_type == "电影" or entity == PERSON_CHOW:
+            continue  # 电影走 movie_alias_row；周星驰在循环后统一写入
         alias_rows.append(
             {
                 "entity": entity,
@@ -170,11 +168,9 @@ def run(cfg: Config) -> tuple[int, int]:
     return len(triples), len(alias_rows)
 
 
-def _write_jsonl(path: Any, rows: list[dict[str, Any]]) -> None:
-    from pathlib import Path
-
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with Path(path).open("w", encoding="utf-8") as fh:
+def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as fh:
         for row in rows:
             fh.write(json.dumps(row, ensure_ascii=False) + "\n")
 

@@ -29,9 +29,9 @@ info 是整块文本，逐行按「标签: 值」解析（兼容全角冒号）�
   否则取第一个可解析项（build_kg 据此只出一条「95分钟」格式的片长三元组）。
 
 独立运行：
-    python collect_detail.py                       # 只合并已落盘的原始记录
-    python collect_detail.py --fetch               # 缺失的单片用 playwright 登录态补采
-    python collect_detail.py --storage-state s.json --no-headless
+    python -m kgqa.collect_detail                 # 只合并已落盘的原始记录
+    python -m kgqa.collect_detail --fetch         # 缺失的单片用 playwright 登录态补采
+    python -m kgqa.collect_detail --storage-state s.json --no-headless
 """
 
 from __future__ import annotations
@@ -55,9 +55,7 @@ TV_LABELS = ("首播", "集数", "季数")
 # 非电影类型关键词（命中即过滤）
 NON_MOVIE_GENRES = ("综艺", "真人秀", "脱口秀", "访谈", "短片", "纪录片")
 # chow_roles 的固定输出顺序
-CHOW_ROLE_ORDER = ("导演", "编剧", "主演", "配音", "制片人")
-# 视为“制片人”身份的行标签（尽力而为，多数电影没有）
-PRODUCER_LABELS = ("制片人", "出品人", "监制")
+CHOW_ROLE_ORDER = ("导演", "编剧", "主演", "配音")
 # 片长解析：「113分钟」「102 分钟」「100分钟(3D重映)」——前导 2-3 位数字，
 # 「分钟」前允许空格，括号内为版本备注（地区/重映/修复版等）
 RUNTIME_RE = re.compile(r"^(\d{2,3})\s*分钟\s*(?:[（(]([^（）()]{1,20})[）)])?\s*$")
@@ -197,11 +195,8 @@ def build_record(
         chow_roles.append("编剧")
     if "周星驰" in actors:
         chow_roles.append("主演")
-    if "周星驰" in "".join(dubbers):
+    if "周星驰" in dubbers:
         chow_roles.append("配音")
-    producer_blob = "".join(labels.get(label, "") for label in PRODUCER_LABELS)
-    if "周星驰" in producer_blob:
-        chow_roles.append("制片人")
     chow_roles.sort(key=CHOW_ROLE_ORDER.index)
 
     runtimes = list_field(labels, "片长")
@@ -299,15 +294,15 @@ def ingest(cfg: Config) -> dict[str, Any]:
 
 
 def load_subjects(cfg: Config) -> list[dict[str, Any]]:
-    """读取搜索清单；没有则提示先跑 collect_list.py。"""
+    """读取搜索清单；没有则提示先跑 python -m kgqa.collect_list。"""
     if not cfg.subjects_file.exists():
         raise FileNotFoundError(
-            f"没有找到 {cfg.subjects_file}，请先运行：python collect_list.py"
+            f"没有找到 {cfg.subjects_file}，请先运行：python -m kgqa.collect_list"
         )
     subjects = json.loads(cfg.subjects_file.read_text(encoding="utf-8"))
     if not isinstance(subjects, list) or not subjects:
         raise ValueError(
-            f"{cfg.subjects_file} 为空，请重新运行：python collect_list.py"
+            f"{cfg.subjects_file} 为空，请重新运行：python -m kgqa.collect_list"
         )
     return subjects
 
@@ -394,18 +389,6 @@ def fetch_missing(
     return done
 
 
-def run(
-    cfg: Config,
-    fetch: bool = False,
-    storage_state: str | None = None,
-    headless: bool = True,
-) -> dict[str, Any]:
-    """供 main.py ingest 调用；fetch=True 时先补采再入库。"""
-    if fetch:
-        fetch_missing(cfg, storage_state=storage_state, headless=headless)
-    return ingest(cfg)
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="豆瓣单片详情入库（raw → movies.jsonl）"
@@ -429,12 +412,11 @@ def main() -> None:
     args = parser.parse_args()
 
     cfg = load_config(args.config)
-    run(
-        cfg,
-        fetch=args.fetch,
-        storage_state=args.storage_state,
-        headless=not args.no_headless,
-    )
+    if args.fetch:
+        fetch_missing(
+            cfg, storage_state=args.storage_state, headless=not args.no_headless
+        )
+    ingest(cfg)
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from kgqa.config import QUESTION_TYPES, RELATIONS, Config
-from kgqa.kg_linker import load_aliases
+from kgqa.kg_linker import load_aliases, row_names
 from kgqa.llm_client import LLMClient
 
 __all__ = ["relations_from_question", "understand_question"]
@@ -195,7 +195,7 @@ def _rule_name_candidates(cfg: Config) -> list[str]:
         names: list[str] = []
         try:
             for row in load_aliases(cfg.aliases_file):
-                names.extend(_row_candidate_names(row))
+                names.extend(row_names(row))
         except FileNotFoundError:
             pass  # 没有别名表时仅靠书名号/引号
         llm_file = Path(cfg.triples_llm_file)
@@ -210,13 +210,9 @@ def _rule_name_candidates(cfg: Config) -> list[str]:
                 ):
                     if node_type in ("角色", "主题") and str(node or "").strip():
                         names.append(str(node).strip())
-        _RULE_NAME_CACHE[key] = _dedupe(sorted(set(names), key=len, reverse=True))
+        # 先保序去重再排序：等长候选名保持别名表登记次序，结果不受 PYTHONHASHSEED 影响
+        _RULE_NAME_CACHE[key] = sorted(_dedupe(names), key=len, reverse=True)
     return _RULE_NAME_CACHE[key]
-
-
-def _row_candidate_names(row: dict[str, Any]) -> list[str]:
-    names = [str(row.get("entity") or ""), *(str(a) for a in row.get("aliases") or [])]
-    return [name.strip() for name in dict.fromkeys(names) if name.strip()]
 
 
 def _dedupe(items: list[str]) -> list[str]:
