@@ -1,0 +1,30 @@
+{"qid": "q01", "question": "《功夫》是谁导演的？", "type": "fact", "gold_keywords": ["周星驰"], "gold_relation": "导演", "note": "模板直答；确定性三元组（douban-info），检验单关系查询"}
+{"qid": "q02", "question": "《功夫》的豆瓣评分是多少？", "type": "fact", "gold_keywords": ["8.9"], "gold_relation": "评分", "note": "模板直答；属性三元组（评分），tail 为字面值"}
+{"qid": "q03", "question": "《少林足球》是哪一年上映的？", "type": "fact", "gold_keywords": ["2001"], "gold_relation": "上映年份", "note": "模板直答；属性三元组（上映年份）"}
+{"qid": "q04", "question": "《大话西游之大圣娶亲》是哪一年上映的？", "type": "fact", "gold_keywords": ["1995"], "gold_relation": "上映年份", "note": "模板直答；片名来自又名表（原名含繁体，ingest 已归一），检验别名链接"}
+{"qid": "q05", "question": "《喜剧之王》是哪一年上映的？", "type": "fact", "gold_keywords": ["1999"], "gold_relation": "上映年份", "note": "模板直答；属性三元组（上映年份）"}
+{"qid": "q06", "question": "《长江七号》是哪一年上映的？", "type": "fact", "gold_keywords": ["2008"], "gold_relation": "上映年份", "note": "模板直答；属性三元组（上映年份）"}
+{"qid": "q07", "question": "《唐伯虎点秋香》是谁导演的？", "type": "fact", "gold_keywords": ["李力持"], "gold_relation": "导演", "note": "模板直答；周星驰只主演不导演的片子，检验不把导演答成周星驰"}
+{"qid": "q08", "question": "《九品芝麻官》是谁导演的？", "type": "fact", "gold_keywords": ["王晶"], "gold_relation": "导演", "note": "模板直答；确定性三元组（douban-info）"}
+{"qid": "q09", "question": "《大话西游之大圣娶亲》的豆瓣评分是多少？", "type": "fact", "gold_keywords": ["9.2"], "gold_relation": "评分", "note": "模板直答；属性三元组（评分）"}
+{"qid": "q10", "question": "《美人鱼》是谁导演的？", "type": "fact", "gold_keywords": ["周星驰"], "gold_relation": "导演", "note": "模板直答；周星驰执导但不主演的片子，检验导演边反向查询"}
+{"qid": "q11", "question": "《功夫》由哪些演员主演？", "type": "fact", "gold_keywords": ["元秋", "黄圣依", "梁小龙"], "gold_relation": "主演", "note": "模板直答；答案为多人列表，评测按任一命中计分，人工检查应至少答出主演中两位（周星驰也在主演之列）"}
+{"qid": "q12", "question": "《西游降魔篇》的豆瓣评分是多少？", "type": "fact", "gold_keywords": ["7.2"], "gold_relation": "评分", "note": "模板直答；周星驰仅执导未主演的片子，检验不混淆导演与主演"}
+{"qid": "q13", "question": "周星驰导演过哪些电影？", "type": "multi_hop", "gold_keywords": ["功夫", "少林足球", "长江七号"], "gold_relation": "导演", "note": "反向查询（人物→导演边→电影列表）；食神/喜剧之王/国产凌凌漆/美人鱼/西游降魔篇/大内密探零零发/新喜剧之王 等也都对，检查至少命中 3 部"}
+{"qid": "q14", "question": "吴孟达和周星驰合作过哪些电影？", "type": "multi_hop", "gold_keywords": ["少林足球", "赌圣"], "gold_relation": "主演", "note": "两次主演边反查取交集；逃学威龙系列/九品芝麻官/武状元苏乞儿/破坏之王/赌侠/食神/喜剧之王/大话西游两部/鹿鼎记/审死官 等也都对，检查至少命中 3 部"}
+{"qid": "q15", "question": "《大话西游之大圣娶亲》和《大话西游之月光宝盒》的导演是谁？", "type": "multi_hop", "gold_keywords": ["刘镇伟"], "gold_relation": "导演", "note": "两跳组合（两部各查一次导演）；答案应指出两部均为刘镇伟"}
+{"qid": "q16", "question": "陈嘉上导演过周星驰的哪几部电影？", "type": "multi_hop", "gold_keywords": ["逃学威龙", "武状元苏乞儿"], "gold_relation": "导演", "note": "导演边反查；逃学威龙2 也对，检查至少命中 2 部"}
+{"qid": "q17", "question": "赵薇和周星驰合作的电影是什么？", "type": "multi_hop", "gold_keywords": ["少林足球"], "gold_relation": "主演", "note": "主演边反查（主演=赵薇 ∩ 主演=周星驰），语料内唯一命中为少林足球"}
+{"qid": "q18", "question": "王晶导演过周星驰的哪几部电影？", "type": "multi_hop", "gold_keywords": ["九品芝麻官", "赌侠"], "gold_relation": "导演", "note": "导演边反查；鹿鼎记/整蛊专家/逃学威龙3之龙过鸡年/赌侠2/鹿鼎记2 也都对，检查至少命中 2 部"}
+{"qid": "q19", "question": "紫霞仙子是谁演的？", "type": "role", "gold_keywords": ["朱茵"], "gold_relation": "饰演", "note": "依赖 llm-offline 饰演三元组；问题只含角色名，先链接到大话西游之大圣娶亲的紫霞仙子"}
+{"qid": "q20", "question": "《长江七号》里的周小狄是谁演的？", "type": "role", "gold_keywords": ["徐娇"], "gold_relation": "饰演", "note": "依赖 llm-offline 饰演三元组；徐娇不在主演前五位（更多...之后），主演边兜不住"}
+{"qid": "q21", "question": "《功夫》里的包租婆是谁演的？", "type": "role", "gold_keywords": ["元秋"], "gold_relation": "饰演", "note": "依赖 llm-offline 饰演三元组；元秋也在《功夫》主演列表，可由主演边兜底"}
+{"qid": "q22", "question": "《功夫》里的火云邪神是谁演的？", "type": "role", "gold_keywords": ["梁小龙"], "gold_relation": "饰演", "note": "依赖 llm-offline 饰演三元组；梁小龙也在《功夫》主演列表，可由主演边兜底"}
+{"qid": "q23", "question": "《喜剧之王》里尹天仇的扮演者是谁？", "type": "role", "gold_keywords": ["周星驰"], "gold_relation": "饰演", "note": "依赖 llm-offline 饰演三元组；问题带片名前缀，检验「电影-角色」两级链接"}
+{"qid": "q24", "question": "《大话西游之大圣娶亲》里至尊宝是谁演的？", "type": "role", "gold_keywords": ["周星驰"], "gold_relation": "饰演", "note": "依赖 llm-offline 饰演三元组；至尊宝与周星驰之间靠语义抽取建立对齐"}
+{"qid": "q25", "question": "介绍一下《功夫》讲了什么故事。", "type": "overview", "gold_keywords": ["阿星", "斧头帮", "猪笼城寨"], "note": "RAG 生成；简介片段含 阿星/斧头帮/猪笼城寨，任一命中计分；人工检查答案带 [n] 引用且 n 对应证据存在"}
+{"qid": "q26", "question": "《大话西游之大圣娶亲》讲了一个什么故事？", "type": "overview", "gold_keywords": ["至尊宝", "紫霞", "月光宝盒"], "note": "RAG 生成；任一命中计分；人工检查引用有效"}
+{"qid": "q27", "question": "用几句话介绍《喜剧之王》的剧情。", "type": "overview", "gold_keywords": ["尹天仇", "柳飘飘", "跑龙套"], "note": "RAG 生成；任一命中计分；人工检查引用有效"}
+{"qid": "q28", "question": "《长江七号》讲了一个怎样的故事？", "type": "overview", "gold_keywords": ["小狄", "七仔", "太空狗"], "note": "RAG 生成；任一命中计分；人工检查引用有效"}
+{"qid": "q29", "question": "今天天气怎么样？", "type": "out_of_scope", "gold_keywords": [], "note": "超范围兜底；应礼貌说明本系统只回答周星驰电影相关问题（question_type=out_of_scope，本地答复，不调 API）"}
+{"qid": "q30", "question": "帮我写一首诗。", "type": "out_of_scope", "gold_keywords": [], "note": "超范围兜底；无 key 降级模式下也必须本地礼貌拒答，不得调 API"}

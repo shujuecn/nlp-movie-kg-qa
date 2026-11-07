@@ -1,0 +1,64 @@
+{
+  // 调试知识点的 5 个入口。通用约定：
+  // - 解释器固定为 conda torch-env（含 faiss/gradio/openai 全部依赖）；
+  // - ①②③ 走 configs/debug*.yaml：读真实数据源、写到 data/debug/ 沙箱，不覆盖任何已生成文件；
+  // - ④⑤ 纯读（不落盘），直接用正式配置。
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "① 数据采集：搜索列表（写 data/debug/raw）",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "kgqa.collect_list",
+      "args": ["--config", "configs/debug_collect.yaml", "--max-pages", "1"],
+      "python": "${userHome}/miniconda3/envs/torch-env/bin/python",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "② 数据清洗：ingest（读 data/raw，写 data/debug）",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "main",
+      "args": ["-c", "configs/debug.yaml", "ingest", "--raw-dir", "data/raw"],
+      "python": "${userHome}/miniconda3/envs/torch-env/bin/python",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "③ 语义抽取：单片饰演三元组（写 data/debug）",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "kgqa.extract_llm",
+      "args": ["--config", "configs/debug.yaml", "--subject", "1291543", "--out", "data/debug/triples_llm.jsonl"],
+      "python": "${userHome}/miniconda3/envs/torch-env/bin/python",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "④ RAG 检索：排序演示（纯读）",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "kgqa.qa.retriever",
+      "args": ["介绍一下《功夫》讲了什么故事。", "-k", "10"],
+      "python": "${userHome}/miniconda3/envs/torch-env/bin/python",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "⑤ 答案生成：ask 单题（纯读）",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "main",
+      "args": ["ask", "-q", "介绍一下《功夫》讲了什么故事。"],
+      "python": "${userHome}/miniconda3/envs/torch-env/bin/python",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    }
+  ]
+}

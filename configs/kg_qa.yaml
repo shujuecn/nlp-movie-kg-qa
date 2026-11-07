@@ -1,0 +1,63 @@
+# 周星驰电影知识图谱问答系统默认配置。python main.py 各子命令默认使用本文件。
+douban:
+  # 搜索列表页关键词与翻页限速（秒区间内随机）
+  search_text: 周星驰
+  max_year: 2026
+  page_sleep_sec: [2.0, 3.0]
+  detail_sleep_sec: [3.0, 5.0]
+  # 列表清单与单片原始记录目录；ingest 输出（含剧情简介全文，不入 git）
+  raw_dir: data/raw
+  movies_file: data/movies.jsonl
+  # 注意：豆瓣 info 的主演行会截断成“/ 更多...”，靠字幕段判断是否包含周星驰会误伤
+  # 《赌神》这类主演靠后的条目，因此默认关闭；误命中靠类型/首播/评分规则兜底
+  require_chow_credit: false
+  # info 含“首播/集数/季数”行的视为电视剧集，过滤
+  drop_tv_series: true
+
+embedding:
+  # v2.1：SiliconFlow Embedding API（OpenAI 兼容）；本地不再需要 torch/sentence-transformers
+  base_url: https://api.siliconflow.cn/v1
+  model: Qwen/Qwen3-Embedding-8B
+  key_env: SILICONFLOW_API_KEY
+  # MRL 可调维度；API 返回已归一化向量
+  dimensions: 1024
+  batch_size: 32
+  timeout: 60.0
+  max_retries: 2
+
+kg:
+  # 三元组与别名表目录（随仓库分发，进 git）；llm 三元组由 extract_llm.py 离线产出
+  dir: data/kg
+  triples_file: data/kg/triples.jsonl
+  triples_llm_file: data/kg/triples_llm.jsonl
+  aliases_file: data/kg/aliases.jsonl
+  eval_file: data/eval/qa_eval.jsonl
+
+retriever:
+  # 简介分块字数与相邻块重叠
+  synopsis_chunk_chars: 300
+  synopsis_chunk_overlap: 30
+  # 概述/生成题取多少条简介片段
+  synopsis_top_k: 3
+  # 实体链接向量兜底取多少个候选、余弦阈值
+  entity_top_k: 5
+  entity_threshold: 0.75
+  # FAISS 索引与元数据目录
+  index_dir: data/index
+
+llm:
+  # silra API（OpenAI 兼容）；key 只从环境变量 SILRA_API_KEY 读取（.env 会自动加载）
+  base_url: https://api.silra.cn/v1
+  model: qwen3.8-flash
+  key_env: SILRA_API_KEY
+  max_tokens: 800
+  temperature: 0.2
+  timeout: 60.0
+  max_retries: 2
+
+gradio:
+  host: 127.0.0.1
+  port: 7860
+
+output:
+  dir: data

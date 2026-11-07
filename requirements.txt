@@ -1,0 +1,18 @@
+# 运行环境：conda Python 3.11。v2.1 起 LLM 与 Embedding 均走 API，
+# 本地无需 GPU、无需 torch/sentence-transformers，纯 CPU 即可。
+numpy>=1.26
+faiss-cpu>=1.8
+networkx>=3.2
+PyYAML>=6.0
+tqdm>=4.66
+
+# silra（LLM）与 SiliconFlow（Embedding）均为 OpenAI 兼容 API；.env 读取
+openai>=1.40
+python-dotenv>=1.0
+
+# 网页工作台 webapp.py（Gradio Blocks）
+gradio>=4.44
+
+# 开发工具（ruff / mypy 过检用，不影响运行）
+ruff>=0.6
+mypy>=1.10

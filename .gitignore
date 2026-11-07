@@ -1,0 +1,26 @@
+# data/ 整体入库（采集原始页、清洗数据、图谱成品、评测集随仓库分发）；
+# 仅排除可再生的构建产物（main.py index 自动重建）与 debug 沙箱
+data/index/
+data/debug/
+
+# silra API key（仓库只附 .env.example）
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# 系统与工具
+.DS_Store
+.idea/
+.workbuddy/
+.zcode/
+*.log
+
+# debug 沙箱（.vscode/launch.json 的调试运行写到这里的子目录，不碰真实数据）
+data/debug/
