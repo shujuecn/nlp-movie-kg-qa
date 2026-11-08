@@ -6,13 +6,7 @@
 Embedding 用 SiliconFlow 的 `Qwen/Qwen3-Embedding-8B`，全 API、零深度学习依赖、纯 CPU 可跑；
 承接 261101：向量走向「检索」，图谱负责「事实」，API 大模型负责「理解与表达」。
 
-```
-豆瓣「周星驰」专题（122 条 → 入库 73 部；列表页 requests 免登录，详情页登录态浏览器限速采集）
-  └─▶ data/movies.jsonl（全字段 + 简介）──▶ kgqa/build_kg.py（确定性三元组 + 实体别名表）
-        └─▶ kgqa/extract_llm.py（语义三元组：角色-饰演者、题材；备课期离线抽取，产物随仓库分发）
-  本地（CPU 即可）：NetworkX 图谱谓词查询 ｜ FAISS 简介分块 + 实体名/别名双索引 ｜ Gradio 工作台
-  silra API（qwen3.8-flash）：① 离线语义三元组抽取 ② 在线问题理解（均 JSON mode）③ 在线 RAG 生成（要求引用）
-```
+![系统架构图：数据采集 → 图谱构建（备课期离线）→ 混合问答（在线）](docs/images/architecture.png)
 
 ## 0. 项目结构
 
