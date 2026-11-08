@@ -63,8 +63,8 @@ python main.py serve       # ⑤ 网页工作台，http://127.0.0.1:7860
 
 各步实测输出（2026-11-08 全链路验收）：
 1. `ingest`：合并 `data/raw/*.json` → `data/movies.jsonl`，入库 73 部、过滤 49 条（明细 `data/ingest_report.json`）；
-2. `build-kg`：三元组 1389 条、别名 486 行 → `data/kg/`；语义抽取合并后 963 节点 / 1692 边（含 `data/kg/triples_llm.jsonl` 303 条 饰演/题材）。
-3. `index`：简介分块 83 块 / 实体 966 个 → `data/index/faiss_*.faiss`（约 18k prompt tokens）。
+2. `build-kg`：三元组 1389 条、别名 391 行 → `data/kg/`；语义抽取合并后 963 节点 / 1692 边（含 `data/kg/triples_llm.jsonl` 303 条 饰演/题材）。
+3. `index`：简介分块 83 块 / 实体 871 个 → `data/index/faiss_*.faiss`（约 18k prompt tokens）。
 4. `ask`：输出 JSON（mode / answer / evidence）。事实题模板直答（mode=direct），生成题 RAG 带引用（mode=rag）。
 5. `serve`：工作台打开即自动演示一条例子，并在输入框预填下一问。
 
@@ -98,7 +98,8 @@ data/                        # 全部数据，随仓库分发
 
 ## 4. 四种回答模式
 
-同一问题四种证据组装方式，工作台右下单选切换（`answer(force_route=...)`，契约 §6）：
+同一问题四种证据组装方式，工作台输入框下方的「回答模式」单选切换
+（`answer(force_route=...)`，契约 §6）：
 
 | 模式 | 行为 | API 成本 |
 | --- | --- | --- |

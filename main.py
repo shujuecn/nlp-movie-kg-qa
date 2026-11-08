@@ -3,7 +3,7 @@
 子命令与接口契约（docs/接口契约.md §9）一一对应：
 
   ingest    原始记录 → data/movies.jsonl（kgqa.collect_detail，可选补列表/补采）
-  build-kg  结构化字段 → kg/triples.jsonl + kg/aliases.jsonl（kgqa.build_kg.run）
+  build-kg  结构化字段 → data/kg/ 三元组 + 别名表（kgqa.build_kg.run）
   index     简介分块与实体名/别名 → FAISS 双索引（kgqa.qa.retriever.Retriever.build）
   ask       单条问答：问题理解 → 实体链接 → 直答 / RAG 生成（kgqa.qa.answering.answer）
   eval      30 道金标题评测（kgqa.evaluate.run）

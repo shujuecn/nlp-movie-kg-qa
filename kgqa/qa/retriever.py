@@ -173,7 +173,7 @@ class Retriever:
         """实体索引的编码对象：别名表实体名/别名 + 电影片名 + llm 三元组角色/主题端点。
 
         build_kg 只给「有又名」的电影写别名行，因此电影片名从 movies 兜底补齐；
-        角色/主题实体只存在于 kg/triples_llm.jsonl，同样补进索引以便向量兜底。
+        角色/主题实体只存在于 data/kg/triples_llm.jsonl，同样补进索引以便向量兜底。
         """
         rows = load_aliases(self.cfg.aliases_file)  # 缺失时中文报错，提示先 build-kg
         metas: list[dict[str, str]] = []

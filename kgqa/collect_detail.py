@@ -19,7 +19,7 @@ info 是整块文本，逐行按「标签: 值」解析（兼容全角冒号）�
   4. rating 与 votes 均为空（资料卡/非正片）；
   5. 导演/编剧/主演/配音均无“周星驰”（搜索误命中，可用配置关闭）。
 
-输出 data/movies.jsonl（一行一部，gitignore）：
+输出 data/movies.jsonl（一行一部，随仓库分发）：
     {subject_id, url, title, year:int|null, rating:float|null, votes:int|null,
      directors, screenwriters, actors, genres, regions, languages,
      release_dates, runtimes, runtime_minutes:int|null, aka, imdb, summary,

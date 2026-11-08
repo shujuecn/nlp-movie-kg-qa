@@ -9,7 +9,7 @@
   2. 年份大于 douban.max_year（默认 2026）的未上映条目，丢弃；
   3. 按 subject id 去重。
 
-输出（data/raw/ 下，均 gitignore）：
+输出（data/raw/ 下，随仓库分发）：
   subjects.json         过滤后的条目数组 [{id, title, year, url, abstract, abstract_2}]
   search_items_raw.json 全量原始 item 数组（未过滤，留作核对）
 

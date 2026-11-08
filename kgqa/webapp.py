@@ -828,7 +828,7 @@ def _load_state(cfg: Config) -> None:
         _state["error"] = "\n".join(errors or ["知识图谱未能加载。"]) + (
             "\n\n请确认以下步骤已在仓库根目录完成：\n"
             "1. `python main.py ingest`——原始数据入库（data/movies.jsonl）；\n"
-            "2. `python main.py build-kg`——生成 kg/ 三元组与别名表；\n"
+            "2. `python main.py build-kg`——生成 data/kg/ 三元组与别名表；\n"
             "3. `python main.py index`——生成 data/index/ 下的 FAISS 索引。"
         )
         print(f"组件加载失败，服务仍将启动并在页面状态签展示提示：{errors}")
@@ -848,7 +848,7 @@ def _short_model(model: str | None) -> str:
 def _chips_html(mode: str = "自动") -> str:
     """头部状态签行：状态 + 模型名 + 语料规模 + 图谱浏览开关。
 
-    状态随加载结果与回答模式下拉联动：加载失败 ❌（红）＞ 仅直答 ◐（琥珀）＞
+    状态随加载结果与回答模式单选联动：加载失败 ❌（红）＞ 仅直答 ◐（琥珀）＞
     降级运行 ◐（琥珀）＞ 运行中 ●（绿）。
     """
     if _state.get("error"):
@@ -1125,7 +1125,7 @@ def build_demo() -> gr.Blocks:
                     placeholder="例如：紫霞仙子是谁演的？／介绍一下《大话西游之大圣娶亲》",
                 )
                 msg = gr.Textbox(label="你的问题", placeholder="输入问题")
-                mode_dd = gr.Radio(
+                mode_radio = gr.Radio(
                     choices=["自动", "仅直答", "仅 RAG", "仅检索"],
                     value="自动",
                     label="回答模式",
@@ -1163,11 +1163,11 @@ def build_demo() -> gr.Blocks:
         )
 
         panel_outputs = [msg, chatbot, understanding_json, evidence_html, usage_tb]
-        msg.submit(respond, [msg, chatbot, mode_dd], panel_outputs)
-        send_btn.click(respond, [msg, chatbot, mode_dd], panel_outputs)
+        msg.submit(respond, [msg, chatbot, mode_radio], panel_outputs)
+        send_btn.click(respond, [msg, chatbot, mode_radio], panel_outputs)
         clear_btn.click(_clear, None, panel_outputs)
 
-        # 服务打开后自动演示一条例子（直答零 API 成本），并在输入框预填下一问
+        # 服务打开后自动演示一条例子（答案走本地直答模板，不调生成 API），并预填下一问
         bootstrap_question = "紫霞仙子是谁演的？"
         prefill_question = "介绍一下《大话西游之大圣娶亲》"
 
@@ -1177,7 +1177,7 @@ def build_demo() -> gr.Blocks:
             return tuple(result)
 
         demo.load(_bootstrap_example, None, panel_outputs)
-        mode_dd.change(_chips_html, [mode_dd], [chips_html])
+        mode_radio.change(_chips_html, [mode_radio], [chips_html])
     return demo
 
 

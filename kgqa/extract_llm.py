@@ -4,7 +4,7 @@
 「角色-饰演者」与「题材主题」类语义三元组（导演/主演/评分等确定性字段
 已由 build_kg.py 落图谱，这里不重复抽取）。
 
-输出 kg/triples_llm.jsonl，每行在契约 schema 基础上加 subject_id（重跑去重用）：
+输出 data/kg/triples_llm.jsonl，每行在契约 schema 基础上加 subject_id（重跑去重用）：
     {subject_id, head, head_type, relation, tail, tail_type, source}
 relation 实际只会是 饰演（head=角色名/head_type=角色，tail=演员名/tail_type=人物）
 或 题材（tail=主题词/tail_type=主题）；source 固定 llm-offline。

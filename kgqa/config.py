@@ -56,7 +56,7 @@ class DoubanConfig:
     page_sleep_sec: list[float] = field(default_factory=lambda: [2.0, 3.0])
     detail_sleep_sec: list[float] = field(default_factory=lambda: [3.0, 5.0])
     raw_dir: str = "data/raw"  # 列表清单与单片原始记录
-    movies_file: str = "data/movies.jsonl"  # ingest 输出（gitignore）
+    movies_file: str = "data/movies.jsonl"  # ingest 输出（随仓库分发，进 git）
     # 导演/编剧/主演/配音均无“周星驰”的条目按搜索误命中过滤（可在报告里复核后关闭）
     require_chow_credit: bool = True
     # info 含“首播/集数/季数”行的视为电视剧集，过滤
@@ -83,7 +83,7 @@ class EmbeddingConfig:
 
 @dataclass
 class KgConfig:
-    """知识图谱文件（kg/ 随仓库分发，data/ 不入库）。"""
+    """知识图谱文件（data/kg/ 与评测集随仓库分发）。"""
 
     dir: str = "data/kg"  # 三元组与别名表目录（随仓库分发，进 git）
     triples_file: str = "data/kg/triples.jsonl"  # 确定性三元组（build-kg 产出）
@@ -101,7 +101,7 @@ class RetrieverConfig:
     synopsis_top_k: int = 3  # 概述/生成题取多少条简介片段
     entity_top_k: int = 5  # 实体链接向量兜底取多少个候选
     entity_threshold: float = 0.75  # 实体链接向量兜底的余弦阈值
-    index_dir: str = "data/index"  # FAISS 索引与元数据目录（data/ 整体 gitignore）
+    index_dir: str = "data/index"  # FAISS 索引与元数据目录（可再生产物，gitignore）
 
 
 @dataclass
@@ -127,7 +127,7 @@ class GradioConfig:
 
 @dataclass
 class OutputConfig:
-    """FAISS 索引与评测报告目录（相对仓库根目录）。"""
+    """评测报告目录（相对仓库根目录；FAISS 索引目录另见 RetrieverConfig.index_dir）。"""
 
     dir: str = "data"
 

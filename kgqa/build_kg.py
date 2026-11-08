@@ -1,6 +1,6 @@
 """确定性三元组与实体别名表构建（build-kg 子命令）。
 
-读 data/movies.jsonl（ingest 产出），产出随仓库分发的 kg/ 文件：
+读 data/movies.jsonl（ingest 产出），产出随仓库分发的 data/kg/ 文件：
 
   data/kg/triples.jsonl   每行 {head, head_type, relation, tail, tail_type, source}
                      relation 覆盖：导演/编剧/主演/类型/制片地区/语言/上映年份/片长/
@@ -101,17 +101,19 @@ def build(
                 triples.append(triple)
 
     alias_rows: list[dict[str, Any]] = []
-    entities: dict[tuple[str, str], list[str]] = {}
+    entities: set[tuple[str, str]] = set()
     for triple in triples:
         if triple["relation"] == "又名":
             continue  # 属性值不是实体
-        entities.setdefault((triple["tail"], triple["tail_type"]), [])
-        entities.setdefault((triple["head"], triple["head_type"]), [])
+        entities.add((triple["tail"], triple["tail_type"]))
+        entities.add((triple["head"], triple["head_type"]))
 
     # 人物/类型/地区/语言先登记（默认无别名），电影用 aka 行覆盖
     for entity, entity_type in sorted(entities):
-        if entity_type == "电影" or entity == PERSON_CHOW:
-            continue  # 电影走 movie_alias_row；周星驰在循环后统一写入
+        if entity_type in ("电影", "字面值") or entity == PERSON_CHOW:
+            # 电影走 movie_alias_row；周星驰在循环后统一写入；
+            # 字面值（年份/片长/评分）是属性值不是实体，不进别名表
+            continue
         alias_rows.append(
             {
                 "entity": entity,

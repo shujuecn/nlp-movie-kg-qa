@@ -14,7 +14,7 @@ import networkx as nx
 
 
 def load_graph(kg_dir: str | Path) -> nx.MultiDiGraph:
-    """读取 kg/ 下三元组构建 MultiDiGraph；triples_llm.jsonl 存在才合并。
+    """读取 kg 目录（data/kg/）下三元组构建 MultiDiGraph；triples_llm.jsonl 存在才合并。
 
     边属性固定 relation / source / head_type / tail_type（llm 行的 subject_id
     是 extract_llm.py 去重用的附加字段，不进入图）。
